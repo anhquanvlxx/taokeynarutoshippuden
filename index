@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>NARUTO SHIPPUDEN - Hokage Console V2 (FIX)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        /* CSS Gá»C */
+        @keyframes neon-glow-red {
+            0%, 100% { box-shadow: 0 0 5px #ff3333, 0 0 15px #cc0000; }
+            50% { box-shadow: 0 0 20px #ff3333, 0 0 30px #cc0000; }
+        }
+        @keyframes neon-glow-yellow {
+             0%, 100% { box-shadow: 0 0 3px #ffd700, 0 0 10px #ffaa00; }
+             50% { box-shadow: 0 0 15px #ffd700, 0 0 25px #ffaa00; }
+        }
+        @keyframes pulse-border {
+             0%, 100% { border-color: #ffaa00; }
+             50% { border-color: #ff3333; }
+        }
+        
+        body { 
+            font-family: 'Rajdhani', sans-serif; /* Font hiá»‡n Ä‘áº¡i hÆ¡n */
+            background: #000; 
+            color: #e0e0e0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            background-image: radial-gradient(circle at center, rgba(255, 0, 0, 0.05) 0%, transparent 70%);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* KEY LOGIN UI */
+        #login-section {
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.98);
+            z-index: 100;
+        }
+        .key-panel {
+            background: #111;
+            border: 3px solid #ff3333;
+            border-radius: 1rem;
+            padding: 2.5rem;
+            max-width: 90%;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.8), inset 0 0 10px rgba(255, 170, 0, 0.5);
+        }
+        .key-input {
+            background: #1a1a1a;
+            border: 2px solid #ffaa00;
+            color: #ffaa00;
+            font-size: 1.2rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            box-shadow: inset 0 0 10px rgba(255, 170, 0, 0.5);
+            text-transform: uppercase;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+        .modal-title {
+            color: #ff3333;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 8px rgba(255, 50, 50, 1);
+            font-family: 'Orbitron', sans-serif;
+        }
+        .main-button { 
+            background: linear-gradient(135deg, #ff3333, #cc0000); 
+            transition: all 0.3s ease; 
+            animation: neon-glow-red 2.5s infinite ease-in-out; 
+            letter-spacing: 1px; 
+            text-shadow: 0 0 5px #000; 
+            border-radius: 0.5rem; 
+            border: 2px solid #ff6666;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* MENU CONSOLE STYLES (DESIGN Má»I) */
+        #console-container {
+            display: none;
+            width: 100%;
+            max-width: 420px;
+            min-height: 100vh;
+            border-left: 2px solid #333;
+            border-right: 2px solid #333;
+            position: relative;
+        }
+        .naruto-logo { 
+            filter: drop-shadow(0 0 8px rgba(255,170,0,0.8));
+            border-radius: 50%;
+            border: 3px solid #ffaa00;
+            animation: neon-glow-yellow 2.5s infinite ease-in-out;
+        }
+        .feature-icon { color: #ffaa00; }
+        
+        /* Cáº£i tiáº¿n Toggle Switch */
+        .toggle-switch-bg { background-color: #333; transition: background-color 0.4s; }
+        .peer:checked ~ .toggle-switch-bg { background-color: #ff3333; box-shadow: 0 0 10px #ff3333; }
+        .peer:checked ~ .toggle-switch-bg:after { background-color: #ffaa00; }
+        
+        /* Hiá»‡u á»©ng Glitch/Active */
+        .feature-item { border-left: 5px solid #333; transition: all 0.2s; cursor: pointer;}
+        .feature-item:hover { background-color: #1a1a1a; }
+        .feature-item.active-glitch { 
+            border-left-color: #ffaa00 !important; 
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.8), inset 0 0 5px rgba(255, 170, 0, 0.5); 
+            background-color: #1a1a1a !important;
+            animation: pulse-border 1.5s infinite ease-in-out;
+        }
+        
+        /* TAB NAVIGATION Má»I */
+        .tab-button {
+            border-bottom: 2px solid transparent;
+            color: #ccc;
+            transition: color 0.2s, border-bottom-color 0.2s;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .tab-button.active {
+            color: #ff3333;
+            border-bottom: 2px solid #ff3333;
+            text-shadow: 0 0 5px #ff3333;
+        }
+
+        /* FOOTER */
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111; 
+            border-top: 2px solid #ff3333; 
+            box-shadow: 0 -5px 20px rgba(255, 0, 0, 0.5); 
+            z-index: 50;
+            padding: 0.5rem 0;
+            max-width: 420px; 
+            width: 100%;
+        }
+        .nav-item { 
+            color: #ffaa00; 
+            cursor: pointer; 
+            transition: color 0.2s, transform 0.2s; 
+            padding: 0 0.5rem;
+            text-shadow: 0 0 3px #ffaa00;
+        }
+        .nav-item:hover {
+            color: #ff3333;
+            text-shadow: 0 0 8px #ff3333;
+        }
+        
+        /* Panel Info */
+        .info-panel {
+            background: rgba(30, 0, 0, 0.3); /* Glass-like effect */
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 50, 50, 0.5);
+            box-shadow: 0 0 15px rgba(255, 50, 50, 0.5);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-start min-h-screen">
+
+    <div id="login-section">
+        <div class="key-panel">
+            <h2 class="modal-title">đŸ”“ YĂU Cáº¦U KĂCH HOáº T KEY</h2>
+            <p class="text-sm text-gray-400 mb-6">Nháº­p Key kĂ­ch hoáº¡t <span class="text-yellow-400 font-bold">(NARUTO-XXXXXX)</span> Ä‘á»ƒ má»Ÿ Console.</p>
+            
+            <input type="text" id="key-input" placeholder="NHáº¬P KEY Táº I ÄĂ‚Y" class="key-input w-full mb-6 font-bold" maxlength="20">
+            
+            <button id="activate-key-button" class="main-button w-full py-3 text-lg font-bold">
+                KĂCH HOáº T VĂ€O Há»† THá»NG
+            </button>
+            <p id="key-error-message" class="text-xs text-red-500 mt-3 hidden font-bold"></p>
+        </div>
+    </div>
+    
+    <div id="console-container" class="relative bg-black min-h-screen">
+        <div class="max-w-md mx-auto relative z-10 p-2">
+            
+            <div class="text-center pt-8 pb-4">
+                <img src="https://i.postimg.cc/4NFC1Kpc/IMG-2417.jpg" alt="Naruto Shippuden Logo" class="naruto-logo inline-block h-20 w-20">
+                <p class="text-red-500 text-lg font-bold mt-2 font-['Orbitron']">NARUTO SHIPPUDEN</p>
+                <p class="text-gray-400 text-sm mt-1 font-['Orbitron']">HOKAGE CONSOLE V2 (FIX)</p>
+            </div>
+            
+            <div class="flex justify-around border-b border-red-900/50 mb-4 px-4">
+                <button id="tab-config" class="tab-button active text-sm font-bold py-3 px-4 transition-colors duration-200">
+                    <i class="fas fa-cog mr-1"></i> Cáº¤U HĂŒNH Há»† THá»NG
+                </button>
+                <button id="tab-optimize" class="tab-button text-sm font-bold py-3 px-4 transition-colors duration-200">
+                    <i class="fas fa-fighter-jet mr-1"></i> CHá»¨C NÄ‚NG Tá»I Æ¯U
+                </button>
+            </div>
+
+            <div id="tab-content" class="p-4 space-y-5 pb-20">
+                
+                <div id="content-config" class="tab-panel space-y-4">
+                    <h2 class="text-red-400 text-xl font-bold border-b border-[#333] pb-2 font-['Orbitron']">
+                        # â™ï¸ SYSTEM CONFIG
+                    </h2>
+
+                    <div class="info-panel p-4 rounded-xl">
+                        <h3 class="text-yellow-400 font-bold mb-2 font-['Orbitron']">THĂ”NG TIN KĂCH HOáº T</h3>
+                        <div class="text-sm space-y-1">
+                            <p><i class="fas fa-desktop text-red-400 mr-2"></i> Thiáº¿t Bá»‹: <span id="device-info" class="text-green-400">...</span></p>
+                            <p><i class="fas fa-key text-red-400 mr-2"></i> Key: <span id="active-key-display" class="text-yellow-400 font-bold">...</span></p>
+                            <p><i class="fas fa-hourglass-half text-red-400 mr-2"></i> Háº¡n DĂ¹ng: <span id="key-expiry-info" class="text-red-400 font-bold">...</span></p>
+                        </div>
+                    </div>
+
+                    <button id="optimize-system-button" class="main-button w-full py-3 text-sm font-bold">
+                        <i class="fas fa-magic mr-1"></i> Tá»I Æ¯U TOĂ€N Bá»˜ Há»† THá»NG
+                    </button>
+                    
+                    <h3 class="text-red-300 font-bold border-b border-[#333] pb-2 mt-4 font-['Orbitron']">
+                        ### DEVICE OPTIMIZER
+                    </h3>
+                    <div class="space-y-3">
+                        
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="sys-ram-cleaner">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-memory"></i></span><span class="text-sm ml-3 text-white">RAM CLEANER</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature" checked="">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="sys-junk-remover">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-trash-alt"></i></span><span class="text-sm ml-3 text-white">JUNK FILE REMOVER</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature" checked="">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="sys-display-boost">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-tv"></i></span><span class="text-sm ml-3 text-white">DISPLAY BOOST (FPS)</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="sys-network-boost">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-wifi"></i></span><span class="text-sm ml-3 text-white">NETWORK PING OPTIMIZER</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature" checked="">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="sys-disable-av">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-shield-virus"></i></span><span class="text-sm ml-3 text-white">DISABLE ANTIVIRUS</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="sys-cpu-priority">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-microchip"></i></span><span class="text-sm ml-3 text-white">CPU PRIORITY SETTER</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature" checked="">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="sys-turbo-mode">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-rocket"></i></span><span class="text-sm ml-3 text-white">TURBO POWER MODE</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature" checked="">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-optimize" class="tab-panel space-y-4 hidden">
+                    <h2 class="text-red-400 text-xl font-bold border-b border-[#333] pb-2 font-['Orbitron']">
+                        # â”ï¸ GAME OPTIMIZATION
+                    </h2>
+                    
+                    <h3 class="text-yellow-400 font-bold mb-2">Tá»I Æ¯U & KHá»I CHáº Y GAME</h3>
+                    <div class="info-panel p-5 rounded-xl text-center">
+                        <img src="https://i.postimg.cc/N0LYBt0W/IMG-2291.jpg" alt="Logo Garena Free Fire" class="inline-block h-16 w-16 mb-3 rounded-full shadow-lg border-2 border-red-500">
+                        
+                        <button id="open-game-button" class="main-button w-full py-4 text-sm font-bold flex items-center justify-center mt-3">
+                             <span id="loading-spinner" class="hidden h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                             <span id="button-text">Tá»I Æ¯U & Má» GARENA FREE FIRE</span>
+                        </button>
+                    </div>
+
+                    <h3 class="text-red-300 font-bold border-b border-[#333] pb-2 mt-4 font-['Orbitron']">
+                        ### IN-GAME FUNCTIONS
+                    </h3>
+                    <div class="space-y-3">
+
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="game-fps-booster">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-tachometer-alt"></i></span><span class="text-sm ml-3 text-white">FPS BOOSTER</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature-ingame" checked="">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="game-aimlock">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-crosshairs"></i></span><span class="text-sm ml-3 text-white">AIMLOCK</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature-ingame">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="game-headlock">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-head-side-mask"></i></span><span class="text-sm ml-3 text-white">HEADLOCK</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature-ingame">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="game-magic-bullet">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-burst"></i></span><span class="text-sm ml-3 text-white">MAGIC BULLET</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature-ingame">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+
+                        <div class="feature-item flex justify-between items-center p-3 rounded-lg bg-[#0d0d0d] shadow-lg" id="game-recoil-reducer">
+                            <div class="flex items-center"><span class="feature-icon text-base"><i class="fas fa-gun"></i></span><span class="text-sm ml-3 text-white">RECOIL REDUCER</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer toggle-feature-ingame">
+                                <div class="w-11 h-6 rounded-full peer toggle-switch-bg after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="content-guide" class="tab-panel space-y-4 hidden">
+                     <div class="info-panel p-5 rounded-xl">
+                        <h3 class="text-yellow-400 text-xl font-bold border-b border-[#555] pb-2 font-['Orbitron']">HÆ¯á»á»NG DáºªN</h3>
+                         <p class="text-sm text-gray-400 mt-4">
+                            1. LIĂN Há»† ADMIN Äá»‚ **MUA KEY** KĂCH HOáº T.
+                         </p>
+                         <p class="text-sm text-gray-400 mt-2">
+                            2. NHáº¬P **KEY** vĂ o mĂ n hĂ¬nh Ä‘Äƒng nháº­p Ä‘á»ƒ má»Ÿ Menu Console.
+                         </p>
+                         <p class="text-sm text-gray-400 mt-2">
+                            3. **ÄIá»€U CHá»ˆNH** cĂ¡c chá»©c nÄƒng mong muá»‘n, sau Ä‘Ă³ báº¥m **"Tá»I Æ¯U & Má» GARENA FREE FIRE"** Ä‘á»ƒ khá»Ÿi cháº¡y game vá»›i cĂ¡c tá»‘i Æ°u Ä‘Æ°á»£c Ă¡p dá»¥ng.
+                         </p>
+                     </div>
+                </div>
+
+            </div>
+            
+            <div class="bottom-nav">
+                 <div class="flex justify-around">
+                     <a id="nav-home" class="nav-item flex flex-col items-center">
+                         <i class="fas fa-home text-xl"></i>
+                         <span class="text-xs">Trang Chá»§</span>
+                     </a>
+                     <a id="nav-guide" class="nav-item flex flex-col items-center">
+                         <i class="fas fa-book-open text-xl"></i>
+                         <span class="text-xs">HÆ°á»›ng Dáº«n</span>
+                     </a>
+                     <a id="nav-admin" class="nav-item flex flex-col items-center">
+                         <i class="fas fa-user-shield text-xl"></i>
+                         <span class="text-xs">Admin</span>
+                     </a>
+                     <a id="nav-logout" class="nav-item flex flex-col items-center">
+                         <i class="fas fa-sign-out-alt text-xl"></i>
+                         <span class="text-xs">Logout</span>
+                     </a>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // === Cáº¤U HĂŒNH FIREBASE Cá»¦A Báº N (GIá»® NGUYĂN) ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKGCVdZxmyw6VN0b7aYRQnCqpqfWwASXU",
+            authDomain: "lllllk-20ede.firebaseapp.com",
+            databaseURL: "https://lllllk-20ede-default-rtdb.firebaseio.com",
+            projectId: "lllllk-20ede",
+            storageBucket: "lllllk-20ede.firebasestorage.app",
+            messagingSenderId: "314220235218",
+            appId: "1:314220235218:web:679c9a246c314b535f200b",
+            measurementId: "G-DM08514Z1N"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const validKeysRef = database.ref('validKeys'); 
+        
+        // Táº¡o má»™t UID thiáº¿t bá»‹
+        const getDeviceUid = () => {
+            // Láº¥y ID thiáº¿t bá»‹, náº¿u chÆ°a cĂ³ thĂ¬ táº¡o má»›i vĂ  lÆ°u vĂ o localStorage
+            let uid = localStorage.getItem('device_uid');
+            if (!uid) {
+                uid = 'NARU-DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+                localStorage.setItem('device_uid', uid);
+            }
+            return uid;
+        };
+        const DEVICE_UID = getDeviceUid();
+        let currentKey = localStorage.getItem('active_key');
+        
+        // --- HĂ€M Há»– TRá»¢ CHUNG ---
+        const showNotification = (title, message, icon) => {
+            Swal.fire({ title, text: message, icon, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        };
+        
+        function updateKeyExpiryInfo(expiryTimestamp) {
+            const expiryElement = document.getElementById('key-expiry-info');
+            
+            if (expiryTimestamp === 9999999999999) {
+                 expiryElement.innerHTML = '<span class="text-green-400">VÄ¨NH VIá»„N</span>';
+                 return;
+            }
+            
+            const now = Date.now();
+            const remainingTime = expiryTimestamp - now;
+            
+            if (remainingTime <= 0) {
+                 expiryElement.innerHTML = '<span class="text-red-500">ÄĂƒ Háº¾T Háº N</span>';
+                 return;
+            }
+            
+            const days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            expiryElement.textContent = `${days} ngĂ y ${hours} giá»`;
+        }
+        
+        // --- LOGIC áº¨N/HIá»†N TAB CONTENT ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            if (tabId === 'config') {
+                document.getElementById('content-config').classList.remove('hidden');
+                document.getElementById('tab-config').classList.add('active');
+            } else if (tabId === 'optimize') {
+                document.getElementById('content-optimize').classList.remove('hidden');
+                document.getElementById('tab-optimize').classList.add('active');
+            } else if (tabId === 'guide') {
+                document.getElementById('content-guide').classList.remove('hidden');
+                document.getElementById('tab-config').classList.remove('active'); 
+                document.getElementById('tab-optimize').classList.remove('active');
+            }
+        }
+        
+        // ===============================================
+        // === LOGIC KEY LOGIN (USER) ÄĂƒ Cáº¬P NHáº¬T KEY DISPLAY ===
+        // ===============================================
+        function unlockConsoleUI(key, keyData) {
+            currentKey = key;
+            localStorage.setItem('active_key', key);
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('console-container').style.display = 'block'; 
+            
+            // Cáº­p nháº­t thĂ´ng tin Key vĂ  Device UID (FIX Lá»–I)
+            document.getElementById('active-key-display').textContent = key;
+            document.getElementById('device-info').textContent = DEVICE_UID; 
+            
+            updateKeyExpiryInfo(keyData.expiry);
+            switchTab('config'); 
+        }
+
+        function checkKeyLogin() {
+            const enteredKey = document.getElementById('key-input').value.trim().toUpperCase();
+            const errorElement = document.getElementById('key-error-message');
+            
+            if (enteredKey.length < 5) {
+                errorElement.textContent = 'Vui lĂ²ng nháº­p Key há»£p lá»‡.';
+                errorElement.style.display = 'block';
+                return;
+            }
+
+            errorElement.style.display = 'none';
+            document.getElementById('activate-key-button').disabled = true;
+
+            const keyRef = validKeysRef.child(enteredKey);
+
+            keyRef.once('value')
+                .then((snapshot) => {
+                    const keyData = snapshot.val();
+                    const now = Date.now();
+                    
+                    if (!keyData) {
+                        errorElement.textContent = 'Key khĂ´ng tá»“n táº¡i. Vui lĂ²ng kiá»ƒm tra láº¡i.';
+                        errorElement.style.display = 'block';
+                        return;
+                    }
+                    
+                    if (keyData.expiry !== 9999999999999 && keyData.expiry < now) {
+                         errorElement.textContent = 'Key Ä‘Ă£ háº¿t háº¡n. Vui lĂ²ng liĂªn há»‡ Admin.';
+                         errorElement.style.display = 'block';
+                         localStorage.removeItem('active_key');
+                         return;
+                    }
+
+                    const devices = keyData.devices || {};
+                    const maxDevices = keyData.max_devices || 1;
+                    const isKeyActiveOnDevice = devices[DEVICE_UID];
+
+                    if (!isKeyActiveOnDevice && Object.keys(devices).length >= maxDevices) {
+                        errorElement.textContent = `Key Ä‘Ă£ Ä‘Æ°á»£c kĂ­ch hoáº¡t trĂªn ${maxDevices} thiáº¿t bá»‹ khĂ¡c. Vui lĂ²ng liĂªn há»‡ Admin.`;
+                        errorElement.style.display = 'block';
+                        return;
+                    }
+                    
+                    // Cáº­p nháº­t Key cho thiáº¿t bá»‹ nĂ y
+                    devices[DEVICE_UID] = now;
+                    return keyRef.update({
+                        devices: devices,
+                        last_used: now
+                    }).then(() => {
+                        showNotification('âœ… KĂCH HOáº T THĂ€NH CĂ”NG', `ChĂ o má»«ng ${enteredKey}!`, 'success');
+                        unlockConsoleUI(enteredKey, keyData);
+                    });
+                })
+                .catch(error => {
+                    console.error("Firebase Error:", error);
+                    errorElement.textContent = 'Lá»—i káº¿t ná»‘i hoáº·c Key khĂ´ng há»£p lá»‡. Vui lĂ²ng thá»­ láº¡i.';
+                    errorElement.style.display = 'block';
+                })
+                .finally(() => {
+                    document.getElementById('activate-key-button').disabled = false;
+                });
+        }
+        
+        // --- LOGIC KEY AUTO-CHECK VĂ€ EVENT LISTENERS ---
+        document.getElementById('activate-key-button').addEventListener('click', checkKeyLogin);
+        document.getElementById('key-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkKeyLogin();
+            }
+        });
+        
+        // ===============================================
+        // === LOGIC Tá»° Äá»˜NG LOGIN ÄĂƒ Cáº¬P NHáº¬T KEY DISPLAY ===
+        // ===============================================
+        function attemptAutoLogin() {
+            if (currentKey) {
+                 const keyRef = validKeysRef.child(currentKey);
+                 keyRef.once('value').then((snapshot) => {
+                      const keyData = snapshot.val();
+                      if (keyData && (keyData.expiry === 9999999999999 || keyData.expiry > Date.now()) && keyData.devices && keyData.devices[DEVICE_UID]) {
+                          
+                          // Cáº­p nháº­t thĂ´ng tin Key vĂ  Device UID trÆ°á»›c khi unlock (FIX Lá»–I)
+                          keyData.devices[DEVICE_UID] = Date.now(); // Cáº­p nháº­t thá»i gian sá»­ dá»¥ng
+                          unlockConsoleUI(currentKey, keyData); 
+                          
+                          keyRef.update({ 
+                              devices: keyData.devices,
+                              last_used: Date.now() 
+                          });
+                          showNotification('đŸ”‘ ÄÄƒng nháº­p láº¡i thĂ nh cĂ´ng', `ChĂ o má»«ng trá»Ÿ láº¡i ${currentKey}!`, 'info');
+                      } else {
+                          localStorage.removeItem('active_key');
+                          // Váº«n hiá»ƒn thá»‹ Device UID trĂªn mĂ n hĂ¬nh chá» náº¿u auto-login tháº¥t báº¡i
+                          document.getElementById('device-info').textContent = DEVICE_UID;
+                      }
+                 }).catch(error => {
+                      console.error("Auto-Login Firebase Error:", error);
+                      document.getElementById('device-info').textContent = DEVICE_UID;
+                 });
+            } else {
+                // Hiá»ƒn thá»‹ Device UID trĂªn mĂ n hĂ¬nh chá»
+                 document.getElementById('device-info').textContent = DEVICE_UID;
+            }
+        }
+        
+        // LOGIC LOGOUT (THOĂT KEY)
+        document.getElementById('nav-logout').addEventListener('click', () => {
+             Swal.fire({
+                title: 'XĂ¡c nháº­n Logout?',
+                text: "Báº¡n sáº½ cáº§n nháº­p Key láº¡i Ä‘á»ƒ truy cáº­p Menu láº§n sau.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Äá»“ng Ă½',
+                cancelButtonText: 'Há»§y'
+             }).then((result) => {
+                if (result.isConfirmed) {
+                     if (currentKey) {
+                        const deviceRef = validKeysRef.child(currentKey).child('devices').child(DEVICE_UID);
+                        deviceRef.remove();
+                     }
+                     localStorage.removeItem('active_key');
+                     currentKey = null;
+                     document.getElementById('key-input').value = '';
+                     document.getElementById('console-container').style.display = 'none';
+                     document.getElementById('login-section').style.display = 'flex';
+                     showNotification('đŸ”“ ÄĂ£ thoĂ¡t Key', 'ÄĂ£ Ä‘Äƒng xuáº¥t thĂ nh cĂ´ng.', 'info');
+                }
+             });
+        });
+        
+        // LOGIC CHUYá»‚N TAB Cá»¦A GIAO DIá»†N Gá»C
+        document.getElementById('tab-config').addEventListener('click', () => {
+             switchTab('config');
+        });
+        document.getElementById('tab-optimize').addEventListener('click', () => {
+             switchTab('optimize');
+        });
+        // NAV FOOTER
+        document.getElementById('nav-home').addEventListener('click', () => {
+             switchTab('config');
+        });
+        document.getElementById('nav-guide').addEventListener('click', () => {
+             switchTab('guide');
+        });
+        document.getElementById('nav-admin').addEventListener('click', () => {
+             window.open('https://linkbio.co/anhquan1', '_blank'); 
+        });
+        
+        
+        // LOGIC BUTTON CHá»¨C NÄ‚NG (Má» GAME)
+        const openGameButton = document.getElementById('open-game-button');
+        const optimizeSystemButton = document.getElementById('optimize-system-button');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const buttonText = document.getElementById('button-text');
+        const gameFeatureItems = document.querySelectorAll('#game-aimlock, #game-headlock, #game-magic-bullet, #game-recoil-reducer');
+        const allSysToggles = document.querySelectorAll('#sys-ram-cleaner input, #sys-junk-remover input, #sys-network-boost input, #sys-cpu-priority input, #sys-turbo-mode input');
+
+        function simulateProcess(button, message, isGameButton = false) {
+             if (button.disabled) return;
+             
+             button.disabled = true;
+             if (isGameButton) {
+                 button.style.animation = 'none';
+                 loadingSpinner.classList.remove('hidden');
+                 buttonText.textContent = message;
+                 gameFeatureItems.forEach(item => item.classList.add('active-glitch'));
+             } else {
+                 button.textContent = message;
+             }
+
+            setTimeout(() => {
+                if (isGameButton) {
+                    window.location.href = 'garenafreefire://'; 
+                    showNotification('đŸ€ KĂCH HOáº T THĂ€NH CĂ”NG ', 'Há»‡ thá»‘ng Ä‘ang cá»‘ gáº¯ng má»Ÿ Free Fire.', 'success');
+                    buttonText.textContent = 'Tá»I Æ¯U & Má» GARENA FREE FIRE';
+                    loadingSpinner.classList.add('hidden');
+                    button.style.animation = 'neon-glow-red 2.5s infinite ease-in-out';
+                    gameFeatureItems.forEach(item => item.classList.remove('active-glitch'));
+                } else {
+                    showNotification('âœ… Tá»‘i Æ¯u ThĂ nh CĂ´ng', 'Cáº¥u hĂ¬nh há»‡ thá»‘ng Ä‘Ă£ Ä‘Æ°á»£c tá»‘i Æ°u.', 'success');
+                    button.textContent = 'Tá»I Æ¯U TOĂ€N Bá»˜ Há»† THá»NG';
+                    allSysToggles.forEach(checkbox => checkbox.checked = true);
+                }
+                button.disabled = false;
+            }, 2500);
+        }
+
+        optimizeSystemButton.addEventListener('click', () => {
+             simulateProcess(optimizeSystemButton, 'ÄANG Tá»I Æ¯U Há»† THá»NG...');
+        });
+
+        openGameButton.addEventListener('click', () => {
+             simulateProcess(openGameButton, 'ÄANG Tá»I Æ¯U & Má» GAME...', true);
+        });
+
+        // Báº¯t Ä‘áº§u kiá»ƒm tra Key khi táº£i trang
+        attemptAutoLogin();
+    </script>
+</body>
+</html>
